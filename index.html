@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MultiModal Insight Agent</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="layout">
+  <!-- === Sidebar Nav === -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo"><img src="logo.png" alt="MIA"></div>
+    <div class="sidebar-icon active" data-page="welcome" title="Chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div>
+    <div class="sidebar-icon" data-page="market" title="Discover">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    </div>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-icon" data-page="settings" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </div>
+    <div class="sidebar-icon" title="User">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+  </nav>
+
+  <div class="page-container">
+
+    <!-- ========== WELCOME ========== -->
+    <section class="page active" id="page-welcome">
+      <div class="welcome-center">
+        <div class="logo-area">
+          <div class="particles"><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div><div class="particle"></div></div>
+          <div class="logo-3d"><div class="logo-3d-inner"></div></div>
+        </div>
+        <h1 class="hero-title"><strong>MultiModal Insight</strong><span>多模态数据洞察助手</span></h1>
+        <h2 class="hero-desc">文本、语音、图像 — 用自然语言查询数据库，获得智能分析与可视化。</h2>
+        <div class="actions">
+          <button class="btn btn-default" onclick="navigate('market')">查看能力</button>
+          <button class="btn btn-primary" onclick="navigate('chat')">开始对话 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== CHAT ========== -->
+    <section class="page" id="page-chat">
+      <div class="chat-layout">
+        <!-- Session Panel -->
+        <aside class="session-panel" id="sessionPanel">
+          <div class="session-header">
+            <div class="session-header-top">
+              <span class="session-brand">Insight Agent</span>
+              <button class="icon-btn" title="新建对话" onclick="createNewSession()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              </button>
+            </div>
+            <div class="session-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="搜索对话..." id="sessionSearch">
+            </div>
+          </div>
+          <div class="session-list" id="sessionList"></div>
+        </aside>
+        <!-- Workspace -->
+        <div class="chat-workspace">
+          <header class="chat-header">
+            <div class="chat-header-left">
+              <button class="icon-btn" onclick="toggleSessionPanel()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+              </button>
+              <div class="chat-header-avatar" id="chatAvatar">🤯</div>
+              <div class="chat-header-info">
+                <div class="chat-header-title" id="chatTitle">数据洞察</div>
+                <div class="chat-header-desc" id="chatDesc">多模态智能数据分析</div>
+              </div>
+            </div>
+          </header>
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-welcome" id="chatWelcome">
+              <div class="chat-welcome-greeting">
+                <span class="emoji-wave">👋</span>
+                <h1 id="greetingText">下午好</h1>
+              </div>
+              <p class="chat-welcome-msg">我是您的多模态数据洞察助手，支持<strong>文本查询</strong>、<strong>语音输入</strong>和<strong>图像识别</strong>。<br>直接用自然语言提问，我会自动分析数据库并给出可视化结果。</p>
+              <div class="quick-questions">
+                <button class="quick-q" onclick="quickAsk(this)">最近一周的交易趋势如何？</button>
+                <button class="quick-q" onclick="quickAsk(this)">哪些市场的交易量最高？</button>
+                <button class="quick-q" onclick="quickAsk(this)">展示活跃用户的分布情况</button>
+              </div>
+            </div>
+          </div>
+          <!-- Chat Input -->
+          <div class="chat-input-area">
+            <div class="chat-input-previews" id="imagePreviews"></div>
+            <div class="chat-input-wrapper">
+              <div class="input-left-actions">
+                <button class="icon-btn" title="上传图片" onclick="document.getElementById('fileInput').click()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </button>
+                <input type="file" id="fileInput" accept="image/*" multiple style="display:none">
+              </div>
+              <textarea id="chatInput" placeholder="输入问题，或粘贴图片、录音提问..." rows="1"></textarea>
+              <div class="input-right-actions">
+                <button class="icon-btn mic-btn" id="micBtn" title="语音输入">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+                <button class="send-btn" id="sendBtn" onclick="handleSend()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== MARKET ========== -->
+    <section class="page" id="page-market">
+      <header class="market-header">
+        <div class="market-header-left">
+          <span class="session-brand">Insight Agent</span>
+          <span class="market-header-tag">Discover</span>
+        </div>
+      </header>
+      <div class="market-content">
+        <div class="market-hero"><h1>探索多模态数据分析能力</h1></div>
+        <h2 class="market-section-title">MCP 工具链</h2>
+        <div class="market-grid" id="mcpToolsGrid"></div>
+        <h2 class="market-section-title">多模态能力</h2>
+        <div class="market-grid" id="modalityGrid"></div>
+        <h2 class="market-section-title">分析工作流</h2>
+        <div class="market-grid" id="workflowGrid"></div>
+      </div>
+    </section>
+
+    <!-- ========== SETTINGS ========== -->
+    <section class="page" id="page-settings">
+      <div class="settings-layout">
+        <aside class="settings-sidebar">
+          <div class="settings-sidebar-header"><h2>设置</h2><p>后端连接与模型配置</p></div>
+          <div class="settings-menu" id="settingsMenu">
+            <div class="settings-menu-item active" data-tab="connection"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>后端连接</div>
+            <div class="settings-menu-item" data-tab="model"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 2a8 8 0 0 0-8 8c0 3.36 2.07 6.24 5 7.42V19a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1.58c2.93-1.18 5-4.06 5-7.42a8 8 0 0 0-8-8z"/><line x1="9" y1="22" x2="15" y2="22"/></svg>模型设置</div>
+            <div class="settings-menu-item" data-tab="voice"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>语音服务</div>
+            <div class="settings-menu-item" data-tab="about"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>关于</div>
+          </div>
+        </aside>
+        <div class="settings-content" id="settingsContent"></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script src="chat.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

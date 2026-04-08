@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MultiModal Insight Agent — 多模态业务场景展示</title>
+<style>
+/* ===== Reset & Variables (from styles.css) ===== */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#1677ff;--primary-hover:#4096ff;--primary-bg:rgba(22,119,255,.1);
+  --green:#22c55e;--red:#ef4444;
+  --text:rgba(255,255,255,.88);--text2:rgba(255,255,255,.65);--text3:rgba(255,255,255,.45);
+  --bg:#000;--bg1:#141414;--bg2:#1f1f1f;--bg3:#262626;
+  --border:rgba(255,255,255,.12);--border2:rgba(255,255,255,.08);
+  --radius:8px;--radius-lg:12px;
+}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+
+/* ===== Layout ===== */
+.layout{display:flex;height:100vh;width:100vw}
+.page-container{flex:1;position:relative;overflow:hidden}
+.page{position:absolute;inset:0;display:none;opacity:0;transition:opacity .25s ease}
+.page.active{display:flex;opacity:1}
+
+/* ===== Sidebar ===== */
+.sidebar{width:64px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:4px;flex-shrink:0;z-index:100}
+.sidebar-logo{width:40px;height:40px;margin-bottom:12px;border-radius:var(--radius);overflow:hidden;cursor:pointer;background:linear-gradient(135deg,#1677ff,#4096ff);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff;font-family:'SF Pro Display',-apple-system,sans-serif;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sidebar-icon{width:40px;height:40px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;color:var(--text2)}
+.sidebar-icon:hover{background:rgba(255,255,255,.08);color:var(--text)}
+.sidebar-icon.active{background:rgba(255,255,255,.12);color:var(--text)}
+.sidebar-icon svg{width:22px;height:22px}
+.sidebar-spacer{flex:1}
+
+/* ===== Buttons ===== */
+.icon-btn{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.icon-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
+
+/* ===== Chat Page ===== */
+.chat-layout{display:flex;width:100%;height:100%}
+
+/* Session Panel */
+.session-panel{width:300px;min-width:240px;background:var(--bg1);border-right:1px solid var(--border);display:flex;flex-direction:column;transition:width .25s,min-width .25s;overflow:hidden}
+.session-header{padding:16px;display:flex;flex-direction:column;gap:12px}
+.session-header-top{display:flex;align-items:center;justify-content:space-between}
+.session-brand{font-size:18px;font-weight:700;background:linear-gradient(135deg,#fff,#a0c4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.session-search{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:8px 12px}
+.session-search svg{color:var(--text3);flex-shrink:0}
+.session-search input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:13px}
+.session-search input::placeholder{color:var(--text3)}
+.session-list{flex:1;overflow-y:auto;padding:4px 8px;display:flex;flex-direction:column;gap:2px}
+.session-group-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:12px 12px 4px;font-weight:600}
+.session-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:var(--radius);cursor:pointer;transition:background .15s}
+.session-item:hover{background:rgba(255,255,255,.06)}
+.session-item.active{background:rgba(255,255,255,.1)}
+.session-item-avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:rgba(255,255,255,.06)}
+.session-item-info{flex:1;min-width:0}
+.session-item-title{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-item-desc{font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+
+/* Chat Workspace */
+.chat-workspace{flex:1;display:flex;flex-direction:column;min-width:0}
+.chat-header{height:64px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border2);flex-shrink:0}
+.chat-header-left{display:flex;align-items:center;gap:12px}
+.chat-header-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;background:rgba(255,255,255,.06)}
+.chat-header-info{min-width:0}
+.chat-header-title{font-size:15px;font-weight:600}
+.chat-header-desc{font-size:12px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:300px}
+
+/* Messages */
+.chat-messages{flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:4px}
+
+/* Message Bubbles */
+.msg-row{display:flex;gap:12px;padding:12px 0;max-width:800px;margin:0 auto;width:100%;animation:msgIn .3s ease}
+.msg-row.user{flex-direction:row-reverse}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;margin-top:2px}
+.msg-avatar.user-av{background:var(--bg3);color:var(--text)}
+.msg-avatar.assistant-av{background:rgba(22,119,255,.15);color:var(--primary)}
+.msg-bubble{min-width:0;max-width:90%}
+
+/* User bubble */
+.msg-row.user .msg-bubble{background:var(--bg2);color:var(--text);padding:10px 16px;border-radius:18px 18px 4px 18px;font-size:14px;line-height:1.6}
+.msg-row.user .msg-bubble p{margin:0;white-space:pre-wrap}
+.user-images{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.user-images img{max-width:180px;max-height:140px;border-radius:10px;object-fit:cover;border:1px solid var(--border2)}
+
+/* Assistant bubble */
+.msg-row.assistant .msg-bubble{padding:4px 0;font-size:14px;line-height:1.7;color:var(--text)}
+
+/* ToolSteps */
+.tool-steps{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);font-size:13px;transition:all .3s}
+.tool-steps.all-done{border-color:rgba(52,199,89,.2);background:rgba(52,199,89,.04)}
+.step-row{display:flex;align-items:center;gap:8px;height:24px;transition:opacity .3s}
+.step-row.pending{opacity:.35}
+.step-row.active{opacity:1}
+.step-row.done{opacity:.75}
+.step-row-label{font-weight:500;color:var(--text2);white-space:nowrap}
+.step-row.active .step-row-label{color:var(--primary);font-weight:600}
+.step-row.done .step-row-label{color:var(--text3)}
+.step-icon{display:flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0}
+.step-icon.done-icon{color:var(--green)}
+.steps-summary{display:flex;align-items:center;gap:6px;margin-top:4px;padding-top:6px;border-top:1px solid var(--border);font-size:12px;color:var(--text3)}
+.steps-summary.done{color:var(--green);font-weight:500}
+
+/* Markdown content in messages */
+.msg-markdown{color:var(--text);line-height:1.7}
+.msg-markdown p{margin:0 0 8px}
+.msg-markdown strong{color:#fff}
+.msg-markdown code{background:rgba(255,255,255,.1);padding:2px 6px;border-radius:4px;font-size:13px;font-family:'SF Mono',Monaco,Consolas,monospace}
+.msg-markdown pre{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:16px;margin:8px 0;overflow-x:auto;position:relative}
+.msg-markdown pre code{background:none;padding:0;font-size:13px;line-height:1.5}
+.msg-markdown table{border-collapse:collapse;margin:8px 0;width:100%;font-size:13px}
+.msg-markdown th,.msg-markdown td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+.msg-markdown th{background:var(--bg2);font-weight:600}
+.msg-markdown blockquote{border-left:3px solid var(--primary);padding-left:12px;margin:8px 0;color:var(--text2)}
+.msg-markdown ul,.msg-markdown ol{padding-left:20px;margin:8px 0}
+.msg-markdown li{margin:4px 0}
+.msg-markdown h1,.msg-markdown h2,.msg-markdown h3{margin:16px 0 8px;font-weight:600}
+.msg-markdown hr{border:none;border-top:1px solid var(--border2);margin:12px 0}
+
+/* Message actions */
+.msg-actions{display:flex;gap:2px;margin-top:6px;opacity:0;transition:opacity .15s}
+.msg-row:hover .msg-actions{opacity:1}
+.msg-action-btn{width:28px;height:28px;border:none;background:transparent;color:var(--text3);border-radius:var(--radius);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.msg-action-btn:hover{background:rgba(255,255,255,.08);color:var(--text)}
+
+/* Chat Input */
+.chat-input-area{border-top:1px solid var(--border2);padding:12px 24px 16px;flex-shrink:0}
+.chat-input-wrapper{display:flex;align-items:flex-end;gap:4px;background:var(--bg2);border:1px solid var(--border2);border-radius:24px;padding:6px 8px;transition:border-color .2s,box-shadow .2s}
+.chat-input-wrapper:focus-within{border-color:rgba(22,119,255,.4);box-shadow:0 0 0 2px rgba(22,119,255,.1)}
+.input-left-actions,.input-right-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.chat-input-wrapper textarea{flex:1;border:none;outline:none;resize:none;font-size:14px;line-height:1.5;font-family:inherit;background:transparent;color:var(--text);padding:6px 4px;max-height:200px}
+.chat-input-wrapper textarea::placeholder{color:var(--text3)}
+.send-btn{width:36px;height:36px;border-radius:50%;border:none;background:var(--primary);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.send-btn:hover{background:var(--primary-hover)}
+
+/* ===== Scenario Badge ===== */
+.scenario-badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 10px;border-radius:12px;margin-bottom:6px;letter-spacing:.3px}
+.scenario-badge.text{background:rgba(22,119,255,.15);color:#4096ff}
+.scenario-badge.voice{background:rgba(168,85,247,.15);color:#a855f7}
+.scenario-badge.vision{background:rgba(234,179,8,.15);color:#eab308}
+.scenario-badge.mixed{background:rgba(34,197,94,.15);color:#22c55e}
+
+/* voice waveform indicator */
+/* voice waveform bar */
+.voice-msg{display:flex;align-items:center;gap:10px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.18);border-radius:20px;padding:8px 16px;margin-bottom:6px;cursor:pointer;transition:background .2s;width:fit-content}
+.voice-msg:hover{background:rgba(168,85,247,.14)}
+.voice-msg-icon{flex-shrink:0;color:#a855f7}
+.voice-waveform{display:flex;align-items:center;gap:2px;height:24px}
+.voice-waveform .bar{width:3px;border-radius:2px;background:#a855f7;animation:waveBar 1.2s ease-in-out infinite alternate}
+.voice-waveform .bar:nth-child(1){height:8px;animation-delay:0s}
+.voice-waveform .bar:nth-child(2){height:16px;animation-delay:.1s}
+.voice-waveform .bar:nth-child(3){height:10px;animation-delay:.2s}
+.voice-waveform .bar:nth-child(4){height:20px;animation-delay:.15s}
+.voice-waveform .bar:nth-child(5){height:6px;animation-delay:.25s}
+.voice-waveform .bar:nth-child(6){height:18px;animation-delay:.05s}
+.voice-waveform .bar:nth-child(7){height:12px;animation-delay:.3s}
+.voice-waveform .bar:nth-child(8){height:22px;animation-delay:.12s}
+.voice-waveform .bar:nth-child(9){height:8px;animation-delay:.22s}
+.voice-waveform .bar:nth-child(10){height:14px;animation-delay:.08s}
+.voice-waveform .bar:nth-child(11){height:20px;animation-delay:.18s}
+.voice-waveform .bar:nth-child(12){height:6px;animation-delay:.28s}
+.voice-waveform .bar:nth-child(13){height:16px;animation-delay:.1s}
+.voice-waveform .bar:nth-child(14){height:10px;animation-delay:.2s}
+.voice-waveform .bar:nth-child(15){height:18px;animation-delay:.05s}
+.voice-waveform .bar:nth-child(16){height:8px;animation-delay:.25s}
+@keyframes waveBar{0%{opacity:.4;transform:scaleY(.4)}100%{opacity:1;transform:scaleY(1)}}
+.voice-msg-dur{font-size:13px;color:#a855f7;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* image placeholder in user msg */
+.img-placeholder{display:flex;align-items:center;justify-content:center;width:180px;height:120px;border-radius:10px;border:1px dashed var(--border);background:var(--bg2);color:var(--text3);font-size:12px;flex-direction:column;gap:4px;margin-bottom:8px}
+.img-placeholder svg{opacity:.5}
+
+/* ===== Responsive ===== */
+@media(max-width:768px){.sidebar{display:none}.session-panel{display:none}}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.2)}
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- === Sidebar Nav === -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">M</div>
+    <div class="sidebar-icon active" title="Chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div>
+    <div class="sidebar-icon" title="Discover">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+    </div>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-icon" title="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </div>
+    <div class="sidebar-icon" title="User">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+  </nav>
+
+  <div class="page-container">
+    <section class="page active" id="page-chat">
+      <div class="chat-layout">
+        <!-- Session Panel -->
+        <aside class="session-panel">
+          <div class="session-header">
+            <div class="session-header-top">
+              <span class="session-brand">MultiModal-Insight-Agent</span>
+              <button class="icon-btn" title="新建对话">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+              </button>
+            </div>
+            <div class="session-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="搜索对话...">
+            </div>
+          </div>
+          <div class="session-list">
+            <div class="session-group-label">Today</div>
+            <div class="session-item active">
+              <div class="session-item-avatar">💬</div>
+              <div class="session-item-info">
+                <div class="session-item-title">文本查询：交易趋势分析</div>
+                <div class="session-item-desc">NL2SQL · 最近一周交易量趋势</div>
+              </div>
+            </div>
+            <div class="session-item">
+              <div class="session-item-avatar">🎤</div>
+              <div class="session-item-info">
+                <div class="session-item-title">语音查询：市场排名</div>
+                <div class="session-item-desc">Whisper ASR · 各市场成交量排名</div>
+              </div>
+            </div>
+            <div class="session-item">
+              <div class="session-item-avatar">📷</div>
+              <div class="session-item-info">
+                <div class="session-item-title">图像OCR：报表截图分析</div>
+                <div class="session-item-desc">GLM-OCR · 从截图提取数据查询</div>
+              </div>
+            </div>
+            <div class="session-group-label">Yesterday</div>
+            <div class="session-item">
+              <div class="session-item-avatar">🔀</div>
+              <div class="session-item-info">
+                <div class="session-item-title">混合模态：图文联合分析</div>
+                <div class="session-item-desc">Image + Text · 截图+追问</div>
+              </div>
+            </div>
+            <div class="session-item">
+              <div class="session-item-avatar">📊</div>
+              <div class="session-item-info">
+                <div class="session-item-title">自动图表：用户分布可视化</div>
+                <div class="session-item-desc">matplotlib · 自动生成柱状图</div>
+              </div>
+            </div>
+            <div class="session-item">
+              <div class="session-item-avatar">🔊</div>
+              <div class="session-item-info">
+                <div class="session-item-title">TTS播报：语音朗读分析结果</div>
+                <div class="session-item-desc">edge-tts · 语音合成播报</div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Workspace -->
+        <div class="chat-workspace">
+          <header class="chat-header">
+            <div class="chat-header-left">
+              <button class="icon-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+              </button>
+              <div class="chat-header-avatar">🤯</div>
+              <div class="chat-header-info">
+                <div class="chat-header-title">多模态业务场景演示</div>
+                <div class="chat-header-desc">Text · Voice · Vision — 完整 Pipeline 展示</div>
+              </div>
+            </div>
+          </header>
+
+          <div class="chat-messages" id="chatMessages">
+
+            <!-- ============================================ -->
+            <!-- 场景 1: 文本查询 — NL2SQL Pipeline            -->
+            <!-- ============================================ -->
+            <div class="msg-row user">
+              <div class="msg-avatar user-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+              <div class="msg-bubble">
+                <span class="scenario-badge text">💬 文本查询</span>
+                <p>最近一周各市场的交易量趋势如何？哪个市场增长最快？</p>
+              </div>
+            </div>
+
+            <div class="msg-row assistant">
+              <div class="msg-avatar assistant-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+              <div class="msg-bubble">
+                <!-- Tool Steps: 3-step pipeline -->
+                <div class="tool-steps all-done">
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">理解问题</span>
+                  </div>
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">分析数据结构</span>
+                  </div>
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">查询与分析</span>
+                  </div>
+                  <div class="steps-summary done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> 分析完成</div>
+                </div>
+                <div class="msg-markdown">
+                  <p>根据最近 7 天的交易数据，各市场表现如下：</p>
+                  <table>
+                    <thead><tr><th>市场</th><th>7日交易量</th><th>环比变化</th><th>趋势</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>Ethereum</strong></td><td>1,247,893</td><td style="color:#22c55e">+18.3%</td><td>📈 强劲增长</td></tr>
+                      <tr><td><strong>Polygon</strong></td><td>834,521</td><td style="color:#22c55e">+24.7%</td><td>📈 增长最快</td></tr>
+                      <tr><td><strong>Arbitrum</strong></td><td>621,045</td><td style="color:#22c55e">+12.1%</td><td>📈 稳步增长</td></tr>
+                      <tr><td><strong>Solana</strong></td><td>498,312</td><td style="color:#ef4444">-3.2%</td><td>📉 小幅回落</td></tr>
+                      <tr><td><strong>BSC</strong></td><td>356,789</td><td style="color:#22c55e">+5.8%</td><td>📈 温和增长</td></tr>
+                    </tbody>
+                  </table>
+                  <p><strong>关键洞察：</strong></p>
+                  <ul>
+                    <li><strong>Polygon 增长最快</strong>（+24.7%），受 zkEVM 升级和 Gas 费优化驱动</li>
+                    <li>Ethereum 交易量绝对值最高，Layer 2 迁移趋势明显</li>
+                    <li>Solana 是唯一下降的市场，可能与近期网络拥堵有关</li>
+                  </ul>
+                  <blockquote>Pipeline: Intent Router → <code>find_tables</code> → <code>get_table_schema(trades)</code> → LLM 生成 SQL → <code>run_public_sql_query</code> → 自动汇总</blockquote>
+                </div>
+                <div class="msg-actions">
+                  <button class="msg-action-btn" title="复制"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  <button class="msg-action-btn" title="朗读"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- 场景 2: 语音输入 — Whisper ASR → Agent         -->
+            <!-- ============================================ -->
+            <div class="msg-row user">
+              <div class="msg-avatar user-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+              <div class="msg-bubble">
+                <span class="scenario-badge voice">🎤 语音输入</span>
+                <div class="voice-msg">
+                  <svg class="voice-msg-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                  <div class="voice-waveform"><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span><span class="bar"></span></div>
+                  <span class="voice-msg-dur">0:08</span>
+                </div>
+                <p>帮我查一下活跃用户数量最多的前五个地区</p>
+              </div>
+            </div>
+
+            <div class="msg-row assistant">
+              <div class="msg-avatar assistant-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+              <div class="msg-bubble">
+                <div class="tool-steps all-done">
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">理解问题</span>
+                  </div>
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">分析数据结构</span>
+                  </div>
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">查询与分析</span>
+                  </div>
+                  <div class="steps-summary done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> 分析完成</div>
+                </div>
+                <div class="msg-markdown">
+                  <p>活跃用户数量 TOP 5 地区如下：</p>
+                  <table>
+                    <thead><tr><th>排名</th><th>地区</th><th>活跃用户数</th><th>占比</th></tr></thead>
+                    <tbody>
+                      <tr><td>1</td><td>🇺🇸 North America</td><td>89,432</td><td>31.2%</td></tr>
+                      <tr><td>2</td><td>🇪🇺 Europe</td><td>67,218</td><td>23.5%</td></tr>
+                      <tr><td>3</td><td>🇨🇳 East Asia</td><td>52,891</td><td>18.5%</td></tr>
+                      <tr><td>4</td><td>🇮🇳 South Asia</td><td>38,745</td><td>13.5%</td></tr>
+                      <tr><td>5</td><td>🇧🇷 Latin America</td><td>24,103</td><td>8.4%</td></tr>
+                    </tbody>
+                  </table>
+                  <p><strong>分析：</strong> 北美和欧洲合计占比超过 54%，亚太地区增长势头强劲，南亚用户环比增长 +32%。</p>
+                  <blockquote>Pipeline: 🎤 Mic → Whisper → 文本 → Intent Router → MCP Text2SQL Agent → 结果汇总</blockquote>
+                </div>
+                <div class="msg-actions">
+                  <button class="msg-action-btn" title="复制"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  <button class="msg-action-btn" title="朗读"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- 场景 3: 图像OCR — 截图 → GLM-OCR → 文本查询    -->
+            <!-- ============================================ -->
+            <div class="msg-row user">
+              <div class="msg-avatar user-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+              <div class="msg-bubble">
+                <span class="scenario-badge vision">📷 图像 OCR</span>
+                <div class="user-images"><img src="ocr-input.png" alt="[Image 1]"></div>
+                <p>查询这个用户的数据</p>
+              </div>
+            </div>
+
+            <div class="msg-row assistant">
+              <div class="msg-avatar assistant-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+              <div class="msg-bubble">
+                <div class="tool-steps all-done">
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">理解问题</span>
+                  </div>
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">分析数据结构</span>
+                  </div>
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">查询与分析</span>
+                  </div>
+                  <div class="steps-summary done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> 分析完成</div>
+                </div>
+                <div class="msg-markdown">
+                  <p><strong>📄 OCR 提取结果：</strong> 识别到用户名 <code>risk-manager</code>，Positions Value <code>$202.7K</code>，Profit/Loss <code>$227,790.83</code>，已自动匹配数据库用户记录。</p>
+                  <p>用户 <strong>risk-manager</strong> 链上交易档案：</p>
+                  <table>
+                    <thead><tr><th>指标</th><th>数值</th><th>全站排名</th></tr></thead>
+                    <tbody>
+                      <tr><td>累计盈亏 (P&L)</td><td style="color:#22c55e"><strong>+$227,790.83</strong></td><td>Top 0.3%</td></tr>
+                      <tr><td>持仓价值</td><td>$202.7K</td><td>Top 1.2%</td></tr>
+                      <tr><td>最大单笔盈利</td><td>$193.3K</td><td>Top 0.1%</td></tr>
+                      <tr><td>总预测次数</td><td>671</td><td>Top 5%</td></tr>
+                      <tr><td>注册时间</td><td>Oct 2024</td><td>—</td></tr>
+                      <tr><td>主页浏览</td><td>28.6K views</td><td>高关注度</td></tr>
+                    </tbody>
+                  </table>
+                  <p><strong>当前活跃持仓 TOP 2：</strong></p>
+                  <table>
+                    <thead><tr><th>市场</th><th>方向</th><th>均价</th><th>现价</th><th>持仓价值</th><th>盈亏</th></tr></thead>
+                    <tbody>
+                      <tr><td>Gavin Newsom 2028 民主党提名</td><td>Yes</td><td>31.6¢</td><td>24.3¢</td><td>$27,765.95</td><td style="color:#ef4444">-$8,409 (-23.25%)</td></tr>
+                      <tr><td>Gavin Newsom 2028 总统大选</td><td>No</td><td>80.7¢</td><td>82.8¢</td><td>$27,113.81</td><td style="color:#22c55e">+$698 (+2.64%)</td></tr>
+                    </tbody>
+                  </table>
+                  <p><strong>分析：</strong> 该用户是高盈利型交易者（累计 +$227K），采用对冲策略同时持有 Newsom 提名 Yes 和大选 No 仓位。当前提名仓位浮亏 23%，但大选仓位盈利对冲部分风险。</p>
+                  <blockquote>Pipeline: 📷 Image → GLM-OCR <code>layout_parsing</code> → 提取 username + 数值 → Intent re-route → MCP <code>find_tables</code> → <code>get_table_schema(users, positions)</code> → <code>run_public_sql_query</code> → 关联分析</blockquote>
+                </div>
+                <div class="msg-actions">
+                  <button class="msg-action-btn" title="复制"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  <button class="msg-action-btn" title="朗读"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- 场景 4: 混合模态 — 图片 + 文字追问              -->
+            <!-- ============================================ -->
+            <div class="msg-row user">
+              <div class="msg-avatar user-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+              <div class="msg-bubble">
+                <span class="scenario-badge mixed">🔀 混合模态</span>
+                <div class="img-placeholder">
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <span>anomaly-chart.png</span>
+                </div>
+                <p>这张图里3月15号的交易量突然暴跌，能帮我查一下原因吗？</p>
+              </div>
+            </div>
+
+            <div class="msg-row assistant">
+              <div class="msg-avatar assistant-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+              <div class="msg-bubble">
+                <div class="tool-steps all-done">
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">理解问题</span>
+                  </div>
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">分析数据结构</span>
+                  </div>
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">查询与分析</span>
+                  </div>
+                  <div class="steps-summary done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> 分析完成</div>
+                </div>
+                <div class="msg-markdown">
+                  <p><strong>👁️ 图像分析：</strong> 确认图中 3 月 15 日出现异常低谷，交易量从日均 ~85,000 骤降至 12,340（下降 85.5%）。</p>
+                  <p><strong>🔍 数据库关联查询结果：</strong></p>
+                  <table>
+                    <thead><tr><th>时间</th><th>事件</th><th>影响</th></tr></thead>
+                    <tbody>
+                      <tr><td>03-15 02:00 UTC</td><td>合约升级维护</td><td>主要交易对暂停 8 小时</td></tr>
+                      <tr><td>03-15 06:15 UTC</td><td>Oracle 喂价延迟</td><td>DeFi 协议触发安全暂停</td></tr>
+                      <tr><td>03-15 14:30 UTC</td><td>服务恢复</td><td>交易量逐步回升</td></tr>
+                    </tbody>
+                  </table>
+                  <p><strong>根因：</strong> 3 月 15 日凌晨进行了计划内的合约升级，叠加 Oracle 喂价延迟导致多个 DeFi 协议触发安全机制暂停交易。下午恢复后交易量快速反弹，次日恢复至正常水平。</p>
+                  <blockquote>Pipeline: 📷 Image → GPT-4o Vision（图表分析）+ OCR 提取日期 → <code>user_text</code> 引导查询 → MCP <code>run_public_sql_query</code> 关联系统事件表 → 融合分析</blockquote>
+                </div>
+                <div class="msg-actions">
+                  <button class="msg-action-btn" title="复制"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  <button class="msg-action-btn" title="朗读"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ============================================ -->
+            <!-- 场景 5: 自动图表生成 + TTS                      -->
+            <!-- ============================================ -->
+            <div class="msg-row user">
+              <div class="msg-avatar user-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+              <div class="msg-bubble">
+                <span class="scenario-badge text">📊 图表 + 🔊 TTS</span>
+                <p>用柱状图展示各链上协议的 TVL 排名，然后朗读给我听</p>
+              </div>
+            </div>
+
+            <div class="msg-row assistant">
+              <div class="msg-avatar assistant-av"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></div>
+              <div class="msg-bubble">
+                <div class="tool-steps all-done">
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">理解问题</span>
+                  </div>
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">分析数据结构</span>
+                  </div>
+                  <div class="step-row done">
+                    <svg class="step-icon done-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="step-row-label">查询与分析</span>
+                  </div>
+                  <div class="steps-summary done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg> 分析完成</div>
+                </div>
+                <div class="msg-markdown">
+                  <p>已查询各协议 TVL 排名并自动生成柱状图：</p>
+                  <!-- Chart placeholder -->
+                  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:20px;margin:8px 0;text-align:center">
+                    <div style="display:flex;align-items:flex-end;justify-content:center;gap:12px;height:140px;padding:0 10px">
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                        <span style="font-size:11px;color:var(--text3)">$8.2B</span>
+                        <div style="width:48px;height:120px;background:linear-gradient(180deg,#1677ff,#4096ff);border-radius:4px 4px 0 0"></div>
+                        <span style="font-size:11px;color:var(--text2)">Aave</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                        <span style="font-size:11px;color:var(--text3)">$6.9B</span>
+                        <div style="width:48px;height:100px;background:linear-gradient(180deg,#7c3aed,#a78bfa);border-radius:4px 4px 0 0"></div>
+                        <span style="font-size:11px;color:var(--text2)">Lido</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                        <span style="font-size:11px;color:var(--text3)">$5.1B</span>
+                        <div style="width:48px;height:75px;background:linear-gradient(180deg,#ec4899,#f472b6);border-radius:4px 4px 0 0"></div>
+                        <span style="font-size:11px;color:var(--text2)">Uniswap</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                        <span style="font-size:11px;color:var(--text3)">$3.8B</span>
+                        <div style="width:48px;height:56px;background:linear-gradient(180deg,#f59e0b,#fbbf24);border-radius:4px 4px 0 0"></div>
+                        <span style="font-size:11px;color:var(--text2)">Maker</span>
+                      </div>
+                      <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
+                        <span style="font-size:11px;color:var(--text3)">$2.4B</span>
+                        <div style="width:48px;height:36px;background:linear-gradient(180deg,#22c55e,#4ade80);border-radius:4px 4px 0 0"></div>
+                        <span style="font-size:11px;color:var(--text2)">Curve</span>
+                      </div>
+                    </div>
+                    <div style="font-size:11px;color:var(--text3);margin-top:12px;border-top:1px solid var(--border2);padding-top:8px">📊 Auto-generated bar chart (matplotlib) — TVL by Protocol</div>
+                  </div>
+                  <p><strong>语音播报内容：</strong> Aave 以 82 亿美元 TVL 排名第一，Lido 排名第二为 69 亿美元，Uniswap 以 51 亿美元位列第三。</p>
+                  <blockquote>Pipeline: Text → MCP Agent → 查询结果 → <code>chart.py</code> (matplotlib auto bar chart) → 回答生成 → 🔊 edge-tts <code>zh-CN-XiaoxiaoNeural</code> 语音合成</blockquote>
+                </div>
+                <div class="msg-actions">
+                  <button class="msg-action-btn" title="复制"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+                  <button class="msg-action-btn active" title="朗读"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Chat Input -->
+          <div class="chat-input-area">
+            <div class="chat-input-wrapper">
+              <div class="input-left-actions">
+                <button class="icon-btn" title="上传图片">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </button>
+              </div>
+              <textarea placeholder="输入问题，或粘贴图片、录音提问..." rows="1" readonly></textarea>
+              <div class="input-right-actions">
+                <button class="icon-btn" title="语音输入">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+                <button class="send-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+</body>
+</html>
